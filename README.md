@@ -21,27 +21,33 @@ Open PowerShell in the package directory:
 Set-Location <package-directory>
 ```
 
-Review `customer-config.yaml`, then run a read-only plan:
+Rename the example configuration file:
+
+```powershell
+Rename-Item .\customer-config.example.yaml customer-config.yaml
+```
+
+Edit `customer-config.yaml` and replace every placeholder with values for your environment. Do not add passwords, PATs, OAuth tokens, client secrets, projected JWTs, or kubeconfig content.
+
+Then run a read-only plan to validate the configuration:
 
 ```powershell
 .\run.ps1 -Config .\customer-config.yaml -Plan
 ```
 
-Read the existing Kubernetes Job logs without changing Databricks resources:
-
-```powershell
-.\run.ps1 -Config .\customer-config.yaml -Logs
-```
-
-Create the Databricks identity and grants, render the Kubernetes manifest, deploy the Job, and wait for completion:
+After reviewing the plan, create the Databricks identity and grants, render the Kubernetes manifest, deploy the Job, and wait for completion:
 
 ```powershell
 .\run.ps1 -Config .\customer-config.yaml -Apply
 ```
 
-`-Apply` changes Databricks and Kubernetes resources. `-Plan` and `-Logs` are read-only against those resources. Generated non-secret configuration is written to `generated/resolved-config.json`; redacted logs are written under `logs/`.
+Read the deployed Kubernetes Job logs:
 
-For another environment, copy `customer-config.example.yaml` to `customer-config.yaml` and replace every placeholder. The YAML must contain no password, PAT, OAuth token, client secret, projected JWT, or kubeconfig content.
+```powershell
+.\run.ps1 -Config .\customer-config.yaml -Logs
+```
+
+`-Apply` changes Databricks and Kubernetes resources. `-Plan` and `-Logs` are read-only against those resources. Generated non-secret configuration is written to `generated/resolved-config.json`; redacted logs are written under `logs/`.
 
 ## What Apply does
 
@@ -85,8 +91,8 @@ python -m unittest -v .\test_app.py
 
 - `CUSTOMER-QUICK-START.md`: English customer Quick Start and complete YAML field reference.
 - `APP-PY-FLOW.html`: self-contained visual explanation of the `app.py` runtime flow and function logic.
-- `customer-config.yaml`: current non-secret environment configuration.
 - `customer-config.example.yaml`: reusable customer template.
+- `customer-config.yaml`: ignored local configuration created by renaming the example file.
 - `run.ps1`: YAML validation, discovery, Plan, Apply, and Logs entry point.
 - `app.py`: JWT validation, RFC 8693 token exchange, REST API checks, SQL query.
 - `deployment.template.yaml`: environment-neutral ServiceAccount and Job template.
