@@ -13,6 +13,35 @@ AKS ServiceAccount projected JWT
 
 No PAT, Databricks OAuth secret, Microsoft Entra client secret, or Kubernetes Secret is used.
 
+## Prerequisites and sign-in
+
+Install Azure CLI (`az`), Databricks CLI (`databricks`), Kubernetes CLI (`kubectl`), Python 3, and PyYAML before running the scripts.
+
+The signed-in user must have:
+
+- Azure permission to read the target AKS cluster and obtain its user credentials.
+- Kubernetes RBAC permission to create, update, read, and delete the namespace, ConfigMap, ServiceAccount, and Job used by this deployment, and to read Pod logs.
+- Databricks Account Admin permission for the account configured in `customer-config.yaml`.
+- Databricks workspace permission to manage the selected SQL Warehouse and Unity Catalog objects.
+
+Sign in to Azure and select the target subscription:
+
+```powershell
+az login
+az account set --subscription <azure-subscription-id>
+```
+
+Sign in to the Databricks account with an Account Admin identity. The profile name must match `databricks.accountProfile` in `customer-config.yaml`:
+
+```powershell
+databricks auth login `
+  --host https://accounts.azuredatabricks.net `
+  --account-id <databricks-account-id> `
+  --profile <databricks-account-profile>
+```
+
+After these CLI sign-ins and configuration are complete, run the scripts below. The `-Apply` workflow automatically obtains AKS credentials, configures the Databricks service principal and federation policy, applies the Kubernetes resources, waits for the test Job, and prints redacted results. No separate `az aks get-credentials`, `kubectl apply`, or manual Databricks resource setup is required.
+
 ## Quick start
 
 Open PowerShell in the package directory:
@@ -62,13 +91,7 @@ The YAML-driven entry point calls `configure-databricks.ps1` and `deploy.ps1` to
 7. Starts the SQL Warehouse, creates the test table, initializes its row, and grants `SELECT`.
 8. Validates the assignment, policy, permissions, grants, and test-table result.
 
-Prerequisites for execution:
-
-- `AccountProfile` is authenticated as a Databricks Account Admin.
-- The current Azure CLI user can administer the target Databricks workspace; workspace operations use `azure-cli` authentication.
-- `Catalog` already exists and supports managed tables.
-- The AKS OIDC discovery endpoint and JWKS are publicly reachable by Databricks.
-- Use a unique service principal and policy ID for a distinct workload identity.
+The selected catalog must already exist and support managed tables. The AKS OIDC discovery endpoint and JWKS must be publicly reachable by Databricks. Use a unique service principal and policy ID for each distinct workload identity.
 
 ## Expected output
 
