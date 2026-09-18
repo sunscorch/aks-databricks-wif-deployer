@@ -15,7 +15,14 @@ No PAT, Databricks OAuth secret, Microsoft Entra client secret, or Kubernetes Se
 
 ## Prerequisites and sign-in
 
-Install Azure CLI (`az`), Databricks CLI (`databricks`), Kubernetes CLI (`kubectl`), Python 3, and PyYAML before running the scripts.
+Open PowerShell in the project directory and install the required local tools:
+
+```powershell
+Set-Location <package-directory>
+.\bootstrap.ps1
+```
+
+The bootstrap script uses WinGet to install only missing components: Azure CLI (`az`), Databricks CLI (`databricks`), Kubernetes CLI (`kubectl`), Azure Kubelogin (`kubelogin`), Python 3, and PyYAML. It does not sign in to any account or store credentials. Use `.\bootstrap.ps1 -WhatIf` to preview changes. WinGet may request administrator approval when required by a package.
 
 The signed-in user must have:
 
@@ -43,12 +50,6 @@ databricks auth login `
 After these CLI sign-ins and configuration are complete, run the scripts below. The `-Apply` workflow automatically obtains AKS credentials, configures the Databricks service principal and federation policy, applies the Kubernetes resources, waits for the test Job, and prints redacted results. No separate `az aks get-credentials`, `kubectl apply`, or manual Databricks resource setup is required.
 
 ## Quick start
-
-Open PowerShell in the package directory:
-
-```powershell
-Set-Location <package-directory>
-```
 
 Rename the example configuration file:
 
@@ -114,6 +115,7 @@ python -m unittest -v .\test_app.py
 
 - `CUSTOMER-QUICK-START.md`: English customer Quick Start and complete YAML field reference.
 - `APP-PY-FLOW.html`: self-contained visual explanation of the `app.py` runtime flow and function logic.
+- `bootstrap.ps1`: installs missing local CLI prerequisites through WinGet.
 - `customer-config.example.yaml`: reusable customer template.
 - `customer-config.yaml`: ignored local configuration created by renaming the example file.
 - `run.ps1`: YAML validation, discovery, Plan, Apply, and Logs entry point.

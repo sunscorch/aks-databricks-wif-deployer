@@ -21,6 +21,7 @@ The application does not require a Databricks personal access token (PAT), a Mic
 | --- | --- |
 | `customer-config.yaml` | Customer-specific, non-secret deployment configuration. |
 | `customer-config.example.yaml` | Reusable template for a new environment. |
+| `bootstrap.ps1` | Installs missing local CLI prerequisites through WinGet. |
 | `run.ps1` | Main entry point for Plan, Apply, and Logs modes. |
 | `configure-databricks.ps1` | Creates or reuses the Databricks identity, federation policy, assignment, and permissions. |
 | `deploy.ps1` | Renders and deploys the Kubernetes workload. |
@@ -35,13 +36,13 @@ The application does not require a Databricks personal access token (PAT), a Mic
 
 Run the package from Windows PowerShell or PowerShell 7 on a workstation that has network access to Azure, the Databricks account, the Databricks workspace, and the AKS API server.
 
-Required tools:
+Install the required tools from the package directory:
 
-- Azure CLI (`az`)
-- Databricks CLI (`databricks`)
-- Kubernetes CLI (`kubectl`)
-- Python 3 (`python`)
-- PyYAML (`python -m pip install PyYAML`)
+```powershell
+.\bootstrap.ps1
+```
+
+The script installs only missing Azure CLI, Databricks CLI, Kubernetes CLI, Azure Kubelogin, Python 3, and PyYAML components. Use `.\bootstrap.ps1 -WhatIf` to preview changes. It does not perform account sign-in.
 
 Required permissions:
 
@@ -59,7 +60,7 @@ kubectl version --client
 python --version
 ```
 
-> Important: `tooling.autoInstall` and `tooling.packageManager` are reserved configuration fields. The current `run.ps1` validates required commands but does not automatically install them.
+> Important: Run `bootstrap.ps1` explicitly before `run.ps1`. The deployment entry point validates required commands but does not install or upgrade them.
 
 ## Quick Start
 
@@ -147,8 +148,8 @@ sql_warehouse: current identity and configured test row
 
 | Key | Required | Meaning |
 | --- | --- | --- |
-| `tooling.autoInstall` | No operational effect | Reserved flag for a future tool bootstrap workflow. The current script does not install tools. |
-| `tooling.packageManager` | No operational effect | Reserved package manager name, currently documented as `winget`. |
+| `tooling.autoInstall` | No operational effect | Informational field. Run `bootstrap.ps1` explicitly to install missing tools. |
+| `tooling.packageManager` | No operational effect | Informational package manager name. `bootstrap.ps1` currently requires WinGet. |
 
 ### Azure and AKS
 

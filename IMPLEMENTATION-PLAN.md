@@ -249,18 +249,18 @@ aks-databricks-wif-deployer/
 
 ## 9. Tool Bootstrap
 
-`bootstrap.ps1` will detect and install only missing tools:
+`bootstrap.ps1` detects and installs only missing tools:
 
 - Azure CLI (`az`).
 - Databricks CLI.
 - `kubectl`.
 - `kubelogin` when required by AKS authentication.
-- `yq` for structured YAML parsing.
+- Python 3 and PyYAML for structured YAML parsing.
 
 Rules:
 
 - Use WinGet package IDs, not arbitrary download URLs.
-- Pin or enforce minimum versions.
+- Leave existing installations unchanged and install the current WinGet package when a command is missing.
 - Do not silently trigger elevation.
 - Stop and provide a clear message if administrator approval is required.
 - Do not automate usernames, passwords, MFA, or browser credentials.
