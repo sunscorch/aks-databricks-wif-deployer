@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>app.py Authentication and Access Sequence</title>
+  <style>
+    :root {
+      --ink: #18221d;
+      --muted: #5a665f;
+      --paper: #f7f9f6;
+      --surface: #ffffff;
+      --line: #b9c6bd;
+      --pod: #176b4b;
+      --pod-soft: #e4f1e9;
+      --k8s: #24638c;
+      --k8s-soft: #e7f1f7;
+      --dbx: #b54b31;
+      --dbx-soft: #faece7;
+      --phase: #8b6518;
+      --phase-soft: #faf2dd;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: linear-gradient(rgba(23, 107, 75, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(23, 107, 75, 0.045) 1px, transparent 1px);
+      background-size: 28px 28px;
+      font-family: Bahnschrift, "Trebuchet MS", sans-serif;
+    }
+    header { width: min(1320px, calc(100% - 32px)); margin: 0 auto; padding: 38px 0 24px; }
+    h1 { margin: 0 0 10px; font-family: Cambria, Georgia, serif; font-size: clamp(2rem, 4vw, 3.8rem); font-weight: 600; line-height: 1.05; letter-spacing: 0; }
+    header p { margin: 0; color: var(--muted); font-size: 1rem; }
+    code { padding: 2px 5px; color: #12422d; background: var(--pod-soft); font-family: Consolas, monospace; font-size: 0.9em; }
+    .viewport { width: 100%; overflow-x: auto; padding: 0 16px 48px; }
+    .sequence { --lane-gap: 40px; position: relative; width: min(1320px, 100%); min-width: 760px; margin: 0 auto; padding: 20px 34px 42px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255, 255, 255, 0.96); box-shadow: 0 18px 45px rgba(34, 58, 45, 0.08); }
+    .participants, .lifelines, .row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--lane-gap); }
+    .participants { position: relative; z-index: 3; margin-bottom: 22px; }
+    .participant { min-height: 82px; display: grid; place-items: center; padding: 14px; border: 2px solid; border-radius: 6px; text-align: center; font-weight: 700; background: var(--surface); }
+    .participant small { display: block; margin-top: 4px; color: var(--muted); font-size: 0.75rem; font-weight: 400; }
+    .participant.pod { border-color: var(--pod); background: var(--pod-soft); }
+    .participant.k8s { border-color: var(--k8s); background: var(--k8s-soft); }
+    .participant.dbx { border-color: var(--dbx); background: var(--dbx-soft); }
+    .lifelines { position: absolute; z-index: 0; top: 104px; right: 34px; bottom: 42px; left: 34px; pointer-events: none; }
+    .lifeline { justify-self: center; width: 0; height: 100%; border-left: 2px dashed var(--line); }
+    .events { position: relative; z-index: 2; }
+    .row { position: relative; min-height: 84px; align-items: center; }
+    .phase-row { min-height: 72px; margin: 18px 0 8px; }
+    .phase { grid-column: 1 / 4; justify-self: stretch; padding: 13px 18px; border-left: 5px solid var(--phase); background: var(--phase-soft); color: #5e4716; font-weight: 700; }
+    .phase span { display: block; margin-top: 3px; color: var(--muted); font-size: 0.82rem; font-weight: 400; }
+    .message { position: relative; align-self: center; min-height: 60px; padding-top: 4px; text-align: center; }
+    .message .label { position: relative; z-index: 2; display: inline-block; max-width: 92%; padding: 5px 9px; color: var(--ink); background: var(--surface); font-size: 0.84rem; line-height: 1.35; }
+    .message .arrow { position: absolute; top: 50px; right: 0; left: 0; height: 2px; background: var(--ink); }
+    .message .arrow::after { content: ""; position: absolute; top: -5px; right: -1px; width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 10px solid var(--ink); }
+    .message.reverse .arrow::after { right: auto; left: -1px; border-right: 10px solid var(--ink); border-left: 0; }
+    .pod-k8s, .k8s-pod { grid-column: 1 / 3; }
+    .pod-dbx, .dbx-pod { grid-column: 1 / 4; }
+    .pod-k8s .arrow, .k8s-pod .arrow { right: calc((100% - var(--lane-gap)) / 4); left: calc((100% - var(--lane-gap)) / 4); }
+    .pod-dbx .arrow, .dbx-pod .arrow { right: calc((100% - (2 * var(--lane-gap))) / 6); left: calc((100% - (2 * var(--lane-gap))) / 6); }
+    .self { position: relative; min-height: 72px; padding: 12px 14px; border: 2px solid; border-radius: 6px; background: var(--surface); font-size: 0.84rem; line-height: 1.4; }
+    .self.pod { grid-column: 1; border-color: var(--pod); background: var(--pod-soft); }
+    .self.dbx { grid-column: 3; border-color: var(--dbx); background: var(--dbx-soft); }
+    .self strong { display: block; margin-bottom: 5px; }
+    .response .arrow { height: 0; border-top: 2px dashed var(--muted); background: transparent; }
+    .response .arrow::after { border-left-color: var(--muted); }
+    .response.reverse .arrow::after { border-right-color: var(--muted); }
+    .group { grid-column: 1 / 4; margin: 8px 0 16px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 6px; background: rgba(247, 249, 246, 0.96); }
+    .group-title { margin-bottom: 12px; color: var(--pod); font-size: 0.86rem; font-weight: 700; }
+    .endpoint-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
+    .endpoint { padding: 9px 11px; border-left: 3px solid var(--dbx); background: var(--surface); font-family: Consolas, monospace; font-size: 0.77rem; overflow-wrap: anywhere; }
+    .result { color: var(--muted); font-family: Bahnschrift, "Trebuchet MS", sans-serif; font-size: 0.76rem; }
+    @media (max-width: 720px) { header { padding-top: 26px; } header p { font-size: 0.9rem; } .viewport { padding-inline: 8px; } .sequence { --lane-gap: 32px; padding-inline: 24px; } .endpoint-grid { grid-template-columns: 1fr; } }
+    @media print { body { background: #fff; } .viewport { overflow: visible; padding: 0; } .sequence { min-width: 0; width: 100%; box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><code>app.py</code> authentication and access sequence</h1>
+    <p>Each message is mapped to the function that executes it inside the AKS Pod.</p>
+  </header>
+  <main class="viewport">
+    <section class="sequence" aria-label="AKS Pod to Azure Databricks authentication sequence">
+      <div class="participants">
+        <div class="participant pod">AKS Pod<small>Python application: app.py</small></div>
+        <div class="participant k8s">Kubernetes<small>Projected ServiceAccount token</small></div>
+        <div class="participant dbx">Azure Databricks Workspace<small>OAuth, REST APIs, and SQL Warehouse</small></div>
+      </div>
+      <div class="lifelines" aria-hidden="true"><div class="lifeline"></div><div class="lifeline"></div><div class="lifeline"></div></div>
+      <div class="events">
+        <div class="row phase-row"><div class="phase">Phase 1: Obtain the Kubernetes projected token<span>Kubernetes projects a signed ServiceAccount JWT into the Pod before the application reads it.</span></div></div>
+        <div class="row"><div class="message k8s-pod reverse response"><span class="label">Mount signed JWT containing <code>iss</code>, <code>sub</code>, <code>aud</code>, and <code>exp</code></span><span class="arrow" aria-hidden="true"></span></div></div>
+        <div class="row"><div class="self pod"><strong><code>main()</code> + <code>required_env()</code></strong>Read <code>DATABRICKS_OIDC_TOKEN_FILEPATH</code>, then load the JWT with <code>Path.read_text()</code>.</div></div>
+
+        <div class="row phase-row"><div class="phase">Phase 2: Inspect the JWT locally<span>This is an early diagnostic check. It is not cryptographic signature verification.</span></div></div>
+        <div class="row"><div class="self pod"><strong><code>inspect_projected_jwt()</code></strong>Split the JWT into three parts; call <code>decode_jwt_part()</code> for header and claims; verify expected audience, expected subject, and expiration.</div></div>
+        <div class="row"><div class="self pod"><strong>Safe diagnostic output</strong>Print algorithm, key ID, issuer, audience, subject, expiry, and remaining lifetime. Never print the JWT value.</div></div>
+
+        <div class="row phase-row"><div class="phase">Phase 3: Exchange the token<span>The Databricks token endpoint performs the authoritative federation validation.</span></div></div>
+        <div class="row"><div class="message pod-dbx"><span class="label"><code>exchange_for_databricks_token()</code><br>POST <code>/oidc/v1/token</code> with Kubernetes JWT, Databricks <code>client_id</code>, token-exchange grant, JWT subject-token type, and <code>scope=all-apis</code></span><span class="arrow" aria-hidden="true"></span></div></div>
+        <div class="row"><div class="self dbx"><strong>Databricks federation validation</strong>Resolve the AKS issuer metadata and public signing keys; verify the JWT signature; compare issuer, audience, and subject with the service principal federation policy.</div></div>
+        <div class="row"><div class="message dbx-pod reverse response"><span class="label">Return a short-lived Databricks OAuth access token, token type, scope, and lifetime</span><span class="arrow" aria-hidden="true"></span></div></div>
+        <div class="row"><div class="self pod"><strong><code>TokenExchangeResult</code></strong>Keep <code>access_token</code> in memory and separate it from the printable token metadata summary.</div></div>
+
+        <div class="row phase-row"><div class="phase">Phase 4: Access Databricks resources<span>The same in-memory OAuth token is used for REST API checks and the SQL Warehouse connection.</span></div></div>
+        <div class="row"><div class="message pod-dbx"><span class="label"><code>test_workspace_apis()</code> calls <code>databricks_get()</code> with <code>Authorization: Bearer &lt;access_token&gt;</code></span><span class="arrow" aria-hidden="true"></span></div></div>
+        <div class="row"><div class="group"><div class="group-title">Exact REST requests issued by <code>test_workspace_apis()</code></div><div class="endpoint-grid">
+          <div class="endpoint">GET /api/2.0/preview/scim/v2/Me<br><span class="result">Current service principal identity</span></div>
+          <div class="endpoint">GET /api/2.0/clusters/list<br><span class="result">Visible cluster IDs</span></div>
+          <div class="endpoint">GET /api/2.0/sql/warehouses<br><span class="result">Visible SQL Warehouse IDs</span></div>
+          <div class="endpoint">GET /api/2.1/unity-catalog/catalogs<br><span class="result">Visible catalog names</span></div>
+          <div class="endpoint">GET /api/2.1/unity-catalog/schemas?catalog_name=...<br><span class="result">Visible schema names</span></div>
+          <div class="endpoint">GET /api/2.1/unity-catalog/tables?catalog_name=...&amp;schema_name=...<br><span class="result">Visible table names</span></div>
+        </div></div></div>
+        <div class="row"><div class="message dbx-pod reverse response"><span class="label">Return the current identity and resources allowed by workspace assignment, Warehouse permissions, and Unity Catalog grants</span><span class="arrow" aria-hidden="true"></span></div></div>
+        <div class="row"><div class="self pod"><strong><code>sql_identifier()</code></strong>Validate catalog, schema, and table names against <code>[A-Za-z_][A-Za-z0-9_]*</code> before building SQL text.</div></div>
+        <div class="row"><div class="message pod-dbx"><span class="label"><code>test_sql_warehouse()</code><br>Open a Databricks SQL connection with server hostname, Warehouse HTTP path, and the in-memory OAuth access token</span><span class="arrow" aria-hidden="true"></span></div></div>
+        <div class="row"><div class="message pod-dbx"><span class="label">Execute <code>SELECT current_user(), current_catalog()</code></span><span class="arrow" aria-hidden="true"></span></div></div>
+        <div class="row"><div class="message dbx-pod reverse response"><span class="label">Return the authenticated Databricks identity and active catalog</span><span class="arrow" aria-hidden="true"></span></div></div>
+        <div class="row"><div class="message pod-dbx"><span class="label">Execute <code>SELECT id, message FROM catalog.schema.table ORDER BY id</code></span><span class="arrow" aria-hidden="true"></span></div></div>
+        <div class="row"><div class="message dbx-pod reverse response"><span class="label">Return the configured test-table rows</span><span class="arrow" aria-hidden="true"></span></div></div>
+        <div class="row"><div class="self pod"><strong><code>main()</code> completes</strong>Print bounded JSON summaries for projected JWT metadata, OAuth metadata, REST API visibility, and SQL results. Token values remain undisclosed.</div></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

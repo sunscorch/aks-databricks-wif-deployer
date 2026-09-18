@@ -1,0 +1,49 @@
+version: 1
+
+tooling:
+  autoInstall: true
+  packageManager: winget
+
+azure:
+  subscriptionId: "<azure-subscription-id>"
+  aks:
+    resourceGroup: "<aks-resource-group>"
+    name: "<aks-cluster-name>"
+
+databricks:
+  accountId: "<databricks-account-id>"
+  accountProfile: "<databricks-account-cli-profile>"
+  workspaceId: "<databricks-workspace-id>"
+  warehouse:
+    warehouseId: "<sql-warehouse-id>"
+    # Use httpPath instead of warehouseId when required:
+    # httpPath: "/sql/1.0/warehouses/<sql-warehouse-id>"
+  unityCatalog:
+    catalog: "<existing-catalog>"
+    schema: "<schema-to-create-or-reuse>"
+    table: "<table-to-create-or-reuse>"
+
+identity:
+  servicePrincipalName: "<unique-service-principal-name>"
+  federationPolicyId: "<unique-federation-policy-id>"
+  federationPolicyDescription: "AKS direct OIDC federation"
+  audience: "databricks"
+  kubernetesNamespace: "<kubernetes-namespace>"
+  kubernetesServiceAccount: "<kubernetes-service-account>"
+
+kubernetes:
+  jobName: "<kubernetes-job-name>"
+  configMapName: "<kubernetes-configmap-name>"
+  applicationImage: "python:3.12-slim"
+  tokenExpirationSeconds: 3600
+  jobTimeout: "15m"
+
+test:
+  provisionTable: true
+  seedId: 1
+  seedMessage: "<test-message>"
+
+cleanup:
+  resetDatabricksIdentity: false
+  removeKubernetesTestResources: false
+  removeTestTable: false

@@ -1,0 +1,17 @@
+# Environment-specific configuration
+customer-config.yaml
+
+# Generated deployment artifacts and logs
+generated/
+logs/
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local environment files
+.env
+.env.*
+!.env.example

@@ -1,0 +1,2 @@
+requests>=2.32,<3
+databricks-sql-connector>=4,<5

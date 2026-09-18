@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: __SERVICE_ACCOUNT__
+  namespace: __NAMESPACE__
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: __JOB_NAME__
+  namespace: __NAMESPACE__
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: __JOB_NAME__
+    spec:
+      restartPolicy: Never
+      serviceAccountName: __SERVICE_ACCOUNT__
+      containers:
+        - name: test
+          image: __APPLICATION_IMAGE__
+          command:
+            - /bin/sh
+            - -c
+            - >-
+              pip install --no-cache-dir -r /app/requirements.txt &&
+              python /app/app.py
+          env:
+            - name: DATABRICKS_HOST
+              value: __DATABRICKS_HOST__
+            - name: DATABRICKS_CLIENT_ID
+              value: __DATABRICKS_CLIENT_ID__
+            - name: DATABRICKS_OIDC_TOKEN_FILEPATH
+              value: "/var/run/secrets/databricks/oidc/token"
+            - name: EXPECTED_OIDC_AUDIENCE
+              value: __EXPECTED_OIDC_AUDIENCE__
+            - name: EXPECTED_OIDC_SUBJECT
+              value: __EXPECTED_OIDC_SUBJECT__
+            - name: DATABRICKS_SERVER_HOSTNAME
+              value: __DATABRICKS_SERVER_HOSTNAME__
+            - name: DATABRICKS_HTTP_PATH
+              value: __DATABRICKS_HTTP_PATH__
+            - name: DATABRICKS_CATALOG
+              value: __DATABRICKS_CATALOG__
+            - name: DATABRICKS_SCHEMA
+              value: __DATABRICKS_SCHEMA__
+            - name: DATABRICKS_TABLE
+              value: __DATABRICKS_TABLE__
+          volumeMounts:
+            - name: app
+              mountPath: /app
+              readOnly: true
+            - name: databricks-oidc
+              mountPath: /var/run/secrets/databricks/oidc
+              readOnly: true
+      volumes:
+        - name: app
+          configMap:
+            name: __CONFIG_MAP__
+        - name: databricks-oidc
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  audience: __EXPECTED_OIDC_AUDIENCE__
+                  expirationSeconds: __TOKEN_EXPIRATION_SECONDS__
